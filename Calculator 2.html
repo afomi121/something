@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CalcPro — Scientific Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --panel: #111827;
+    --panel2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #a259ff;
+    --text: #e2eaf5;
+    --text-dim: #6b7f99;
+    --btn-num: #141d2e;
+    --btn-op: #162035;
+    --btn-eq: #003d55;
+    --btn-fn: #1a1230;
+    --glow: 0 0 18px rgba(0,212,255,0.18);
+    --shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Exo 2', sans-serif;
+    color: var(--text);
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(0,212,255,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(162,89,255,0.04) 0%, transparent 60%);
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+  header { position:relative; z-index:1; text-align:center; margin-bottom:24px; animation: fadeDown 0.5s ease; }
+  header h1 { font-family:'Share Tech Mono',monospace; font-size:1.5rem; letter-spacing:6px; color:var(--accent); text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+  header p { font-size:0.65rem; letter-spacing:3px; color:var(--text-dim); margin-top:4px; text-transform:uppercase; }
+
+  .calculator { position:relative; z-index:1; background:var(--panel); border:1px solid var(--border); border-radius:20px; padding:22px; width:400px; box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05); animation: fadeUp 0.5s ease; }
+
+  .mode-toggle { display:flex; background:var(--bg); border-radius:10px; padding:4px; margin-bottom:16px; border:1px solid var(--border); }
+  .mode-btn { flex:1; padding:8px; border:none; background:transparent; color:var(--text-dim); font-family:'Exo 2',sans-serif; font-size:0.72rem; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; border-radius:7px; transition:all 0.2s; }
+  .mode-btn.active { background:var(--panel2); color:var(--accent); box-shadow:0 0 10px rgba(0,212,255,0.15); border:1px solid rgba(0,212,255,0.2); }
+
+  .display { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px 16px 12px; margin-bottom:16px; min-height:88px; position:relative; overflow:hidden; }
+  .display::after { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:0.35; }
+  .badges { display:flex; gap:6px; margin-bottom:6px; }
+  .badge { font-size:0.58rem; font-family:'Share Tech Mono',monospace; letter-spacing:1px; padding:2px 7px; border-radius:4px; }
+  .badge-angle { color:var(--accent3); border:1px solid rgba(162,89,255,0.35); background:rgba(162,89,255,0.08); }
+  .badge-mem { color:var(--accent2); border:1px solid rgba(255,107,53,0.35); background:rgba(255,107,53,0.08); display:none; }
+  .expression { font-family:'Share Tech Mono',monospace; font-size:0.72rem; color:var(--text-dim); text-align:right; margin-bottom:5px; min-height:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .result { font-family:'Share Tech Mono',monospace; font-size:2rem; color:var(--text); text-align:right; letter-spacing:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:color 0.2s; }
+  .result.computed { color:var(--accent); text-shadow:0 0 12px rgba(0,212,255,0.4); }
+  .result.error { color:var(--accent2); font-size:1.1rem; }
+
+  .sci-grid, .norm-grid { display:grid; gap:7px; }
+  .sci-grid { grid-template-columns:repeat(5,1fr); }
+  .norm-grid { grid-template-columns:repeat(4,1fr); }
+
+  .btn { border:1px solid rgba(255,255,255,0.05); border-radius:9px; font-family:'Share Tech Mono',monospace; font-size:0.82rem; cursor:pointer; padding:13px 4px; transition:all 0.12s ease; }
+  .btn:active { transform:scale(0.94); }
+  .btn-num { background:var(--btn-num); color:var(--text); }
+  .btn-num:hover { background:#1e2d42; border-color:rgba(255,255,255,0.1); }
+  .btn-op { background:var(--btn-op); color:var(--accent); }
+  .btn-op:hover { background:#1e3050; }
+  .btn-eq { background:var(--btn-eq); color:var(--accent); border-color:rgba(0,212,255,0.25); font-size:1.15rem; }
+  .btn-eq:hover { background:#005577; box-shadow:var(--glow); }
+  .btn-fn { background:var(--btn-fn); color:var(--accent3); font-size:0.68rem; }
+  .btn-fn:hover { background:#251840; }
+  .btn-clear { background:rgba(255,107,53,0.12); color:var(--accent2); border-color:rgba(255,107,53,0.2); }
+  .btn-clear:hover { background:rgba(255,107,53,0.22); }
+  .btn-mem { background:rgba(162,89,255,0.1); color:var(--accent3); font-size:0.68rem; border-color:rgba(162,89,255,0.2); }
+  .btn-mem:hover { background:rgba(162,89,255,0.2); }
+  .btn-span2 { grid-column:span 2; }
+  .grid-sep { grid-column:1/-1; height:1px; background:var(--border); margin:1px 0; }
+
+  .history-toggle { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; font-size:0.62rem; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:color 0.2s; font-family:'Share Tech Mono',monospace; }
+  .history-toggle:hover { color:var(--accent); }
+  .history-panel { margin-top:8px; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:10px 14px; max-height:120px; overflow-y:auto; display:none; }
+  .history-panel.open { display:block; }
+  .history-item { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--text-dim); padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04); cursor:pointer; transition:color 0.2s; display:flex; justify-content:space-between; }
+  .history-item:hover { color:var(--accent); }
+  .history-item:last-child { border-bottom:none; }
+  .history-empty { font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:var(--text-dim); text-align:center; padding:8px 0; }
+
+  footer { position:relative; z-index:1; margin-top:18px; font-size:0.58rem; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; font-family:'Share Tech Mono',monospace; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CALCPRO</h1>
+  <p>Scientific Calculator</p>
+</header>
+
+<div class="calculator">
+  <div class="mode-toggle">
+    <button class="mode-btn active" onclick="setMode('sci')" id="sciBtn">Scientific</button>
+    <button class="mode-btn" onclick="setMode('norm')" id="normBtn">Standard</button>
+  </div>
+
+  <div class="display">
+    <div class="badges">
+      <span class="badge badge-angle" id="angleBadge">DEG</span>
+      <span class="badge badge-mem" id="memBadge">M</span>
+    </div>
+    <div class="expression" id="expression"></div>
+    <div class="result" id="result">0</div>
+  </div>
+
+  <!-- SCIENTIFIC GRID -->
+  <div class="sci-grid" id="sciGrid">
+    <button class="btn btn-mem" onclick="memClear()">MC</button>
+    <button class="btn btn-mem" onclick="memRecall()">MR</button>
+    <button class="btn btn-mem" onclick="memStore()">MS</button>
+    <button class="btn btn-mem" onclick="memAdd()">M+</button>
+    <button class="btn btn-mem" onclick="memSub()">M−</button>
+
+    <button class="btn btn-fn" onclick="insertFn('sin(')">sin</button>
+    <button class="btn btn-fn" onclick="insertFn('cos(')">cos</button>
+    <button class="btn btn-fn" onclick="insertFn('tan(')">tan</button>
+    <button class="btn btn-fn" onclick="insertFn('asin(')">sin⁻¹</button>
+    <button class="btn btn-fn" onclick="insertFn('acos(')">cos⁻¹</button>
+
+    <button class="btn btn-fn" onclick="insertFn('atan(')">tan⁻¹</button>
+    <button class="btn btn-fn" onclick="insertFn('log(')">log</button>
+    <button class="btn btn-fn" onclick="insertFn('ln(')">ln</button>
+    <button class="btn btn-fn" onclick="insertFn('sqrt(')">√</button>
+    <button class="btn btn-fn" onclick="insertConst('PI')">π</button>
+
+    <button class="btn btn-fn" onclick="insertFn('^2')">x²</button>
+    <button class="btn btn-fn" onclick="insertFn('^')">xʸ</button>
+    <button class="btn btn-fn" onclick="insertConst('E')">e</button>
+    <button class="btn btn-fn" onclick="insertFn('!')">n!</button>
+    <button class="btn btn-fn" onclick="toggleAngle()" id="angleBtn">DEG</button>
+
+    <div class="grid-sep"></div>
+
+    <button class="btn btn-clear btn-span2" onclick="clearAll()">AC</button>
+    <button class="btn btn-fn" onclick="delChar()">⌫</button>
+    <button class="btn btn-fn" onclick="smartParen()">( )</button>
+    <button class="btn btn-op" onclick="insertOp('/')">÷</button>
+
+    <button class="btn btn-num" onclick="insertNum('7')">7</button>
+    <button class="btn btn-num" onclick="insertNum('8')">8</button>
+    <button class="btn btn-num" onclick="insertNum('9')">9</button>
+    <button class="btn btn-fn" onclick="insertFn('%')">%</button>
+    <button class="btn btn-op" onclick="insertOp('*')">×</button>
+
+    <button class="btn btn-num" onclick="insertNum('4')">4</button>
+    <button class="btn btn-num" onclick="insertNum('5')">5</button>
+    <button class="btn btn-num" onclick="insertNum('6')">6</button>
+    <button class="btn btn-fn" onclick="insertFn('abs(')">|x|</button>
+    <button class="btn btn-op" onclick="insertOp('-')">−</button>
+
+    <button class="btn btn-num" onclick="insertNum('1')">1</button>
+    <button class="btn btn-num" onclick="insertNum('2')">2</button>
+    <button class="btn btn-num" onclick="insertNum('3')">3</button>
+    <button class="btn btn-fn" onclick="insertFn('1/(')">1/x</button>
+    <button class="btn btn-op" onclick="insertOp('+')">+</button>
+
+    <button class="btn btn-fn" onclick="toggleSign()">+/−</button>
+    <button class="btn btn-num btn-span2" onclick="insertNum('0')">0</button>
+    <button class="btn btn-num" onclick="insertDot()">.</button>
+    <button class="btn btn-eq" onclick="calculate()">=</button>
+  </div>
+
+  <!-- STANDARD GRID -->
+  <div class="norm-grid" id="normGrid" style="display:none">
+    <button class="btn btn-clear btn-span2" onclick="clearAll()">AC</button>
+    <button class="btn btn-fn" onclick="delChar()">⌫</button>
+    <button class="btn btn-op" onclick="insertOp('/')">÷</button>
+
+    <button class="btn btn-num" onclick="insertNum('7')">7</button>
+    <button class="btn btn-num" onclick="insertNum('8')">8</button>
+    <button class="btn btn-num" onclick="insertNum('9')">9</button>
+    <button class="btn btn-op" onclick="insertOp('*')">×</button>
+
+    <button class="btn btn-num" onclick="insertNum('4')">4</button>
+    <button class="btn btn-num" onclick="insertNum('5')">5</button>
+    <button class="btn btn-num" onclick="insertNum('6')">6</button>
+    <button class="btn btn-op" onclick="insertOp('-')">−</button>
+
+    <button class="btn btn-num" onclick="insertNum('1')">1</button>
+    <button class="btn btn-num" onclick="insertNum('2')">2</button>
+    <button class="btn btn-num" onclick="insertNum('3')">3</button>
+    <button class="btn btn-op" onclick="insertOp('+')">+</button>
+
+    <button class="btn btn-fn" onclick="toggleSign()">+/−</button>
+    <button class="btn btn-num btn-span2" onclick="insertNum('0')">0</button>
+    <button class="btn btn-num" onclick="insertDot()">.</button>
+    <button class="btn btn-eq btn-span2" onclick="calculate()">=</button>
+    <button class="btn btn-fn" onclick="insertFn('%')">%</button>
+  </div>
+
+  <div class="history-toggle" onclick="toggleHistory()">▾ HISTORY</div>
+  <div class="history-panel" id="historyPanel">
+    <div class="history-empty" id="histEmpty">No calculations yet</div>
+  </div>
+</div>
+
+<footer>CalcPro v3.0 — Fixed &amp; Reliable</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────
+let expr = '';
+let angleMode = 'deg';
+let memory = 0;
+let history = [];
+let justCalc = false;
+
+const resultEl     = document.getElementById('result');
+const expressionEl = document.getElementById('expression');
+const angleBadge   = document.getElementById('angleBadge');
+const memBadge     = document.getElementById('memBadge');
+const angleBtn     = document.getElementById('angleBtn');
+
+// ── Display ────────────────────────────────────────────────
+function showDisplay(val, cls) {
+  resultEl.className = 'result' + (cls ? ' ' + cls : '');
+  resultEl.textContent = val || '0';
+}
+function refresh() {
+  expressionEl.textContent = expr;
+  showDisplay(expr || '0');
+}
+
+// ── Number / operator input ────────────────────────────────
+function insertNum(n) {
+  if (justCalc) { expr = ''; justCalc = false; }
+  expr += n;
+  refresh();
+}
+
+function insertDot() {
+  if (justCalc) { expr = '0'; justCalc = false; }
+  const parts = expr.split(/[+\-*\/^(]/);
+  if (!parts[parts.length - 1].includes('.')) expr += '.';
+  refresh();
+}
+
+function insertOp(op) {
+  justCalc = false;
+  if (!expr) { if (op === '-') { expr = '-'; refresh(); } return; }
+  if (/[+\-*\/]$/.test(expr)) expr = expr.slice(0, -1);
+  expr += op;
+  refresh();
+}
+
+// ── Function / constant input ──────────────────────────────
+function insertConst(name) {
+  if (justCalc) justCalc = false;
+  // auto-multiply if last char is digit or )
+  if (expr && /[\d\)]$/.test(expr)) expr += '*';
+  expr += name;
+  refresh();
+}
+
+function insertFn(fn) {
+  if (justCalc) justCalc = false;
+
+  // suffix operators — just append
+  if (fn === '^2' || fn === '!' || fn === '%' || fn === '^') {
+    expr += fn;
+    refresh();
+    return;
+  }
+
+  // prefix functions — auto-multiply if needed
+  if (expr && /[\d\)]$/.test(expr)) expr += '*';
+  expr += fn;
+  refresh();
+}
+
+function smartParen() {
+  justCalc = false;
+  const opens  = (expr.match(/\(/g) || []).length;
+  const closes = (expr.match(/\)/g) || []).length;
+  if (opens > closes && /[\d\)]$/.test(expr)) {
+    expr += ')';
+  } else {
+    if (expr && /[\d\)]$/.test(expr)) expr += '*';
+    expr += '(';
+  }
+  refresh();
+}
+
+function delChar()     { justCalc = false; expr = expr.slice(0, -1); refresh(); }
+function clearAll()    { expr = ''; justCalc = false; expressionEl.textContent = ''; showDisplay('0'); }
+function toggleSign()  { if (!expr || expr === '0') return; expr = expr.startsWith('-') ? expr.slice(1) : '-' + expr; refresh(); }
+function toggleAngle() { angleMode = angleMode === 'deg' ? 'rad' : 'deg'; angleBadge.textContent = angleMode.toUpperCase(); angleBtn.textContent = angleMode.toUpperCase(); }
+function setMode(m) {
+  document.getElementById('sciBtn').classList.toggle('active', m === 'sci');
+  document.getElementById('normBtn').classList.toggle('active', m === 'norm');
+  document.getElementById('sciGrid').style.display  = m === 'sci' ? 'grid' : 'none';
+  document.getElementById('normGrid').style.display = m === 'norm' ? 'grid' : 'none';
+  angleBadge.style.display = m === 'sci' ? '' : 'none';
+}
+
+// ── Memory ─────────────────────────────────────────────────
+function memStore()  { memory = parseFloat(resultEl.textContent) || 0; memBadge.style.display = memory ? '' : 'none'; }
+function memRecall() { expr += memory; refresh(); }
+function memClear()  { memory = 0; memBadge.style.display = 'none'; }
+function memAdd()    { memory += parseFloat(resultEl.textContent) || 0; memBadge.style.display = memory ? '' : 'none'; }
+function memSub()    { memory -= parseFloat(resultEl.textContent) || 0; memBadge.style.display = memory ? '' : 'none'; }
+
+// ── Math helpers ───────────────────────────────────────────
+function toRad(x)   { return angleMode === 'deg' ? x * Math.PI / 180 : x; }
+function fromRad(x) { return angleMode === 'deg' ? x * 180 / Math.PI : x; }
+
+function factorial(n) {
+  n = Math.floor(n);
+  if (n < 0 || n > 170) return NaN;
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
+
+// ── Evaluator ──────────────────────────────────────────────
+// Uses unique placeholders to avoid any substring replacement conflicts
+function safeEval(raw) {
+  let e = raw;
+
+  // 1. Named constants
+  e = e.replace(/\bPI\b/g, '(' + Math.PI + ')');
+  e = e.replace(/\bE\b/g,  '(' + Math.E  + ')');
+
+  // 2. % suffix -> /100
+  e = e.replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+
+  // 3. n! suffix — resolve before anything
+  e = e.replace(/(\d+(?:\.\d+)?)!/g, (_, n) => '(' + factorial(parseFloat(n)) + ')');
+
+  // 4. ^ -> **
+  e = e.replace(/\^/g, '**');
+
+  // 5. Replace named functions — LONGEST NAMES FIRST to avoid partial match
+  //    Using unique identifiers that won't clash
+  const fns = [
+    ['asin', 'F_ASIN'],
+    ['acos', 'F_ACOS'],
+    ['atan', 'F_ATAN'],
+    ['sinh', 'F_SINH'],
+    ['cosh', 'F_COSH'],
+    ['tanh', 'F_TANH'],
+    ['sqrt', 'F_SQRT'],
+    ['log',  'F_LOG'],
+    ['abs',  'F_ABS'],
+    ['sin',  'F_SIN'],
+    ['cos',  'F_COS'],
+    ['tan',  'F_TAN'],
+    ['ln',   'F_LN'],
+  ];
+  for (const [name, placeholder] of fns) {
+    e = e.split(name + '(').join(placeholder + '(');
+  }
+
+  // 6. Close unclosed parens
+  const opens  = (e.match(/\(/g) || []).length;
+  const closes = (e.match(/\)/g) || []).length;
+  e += ')'.repeat(Math.max(0, opens - closes));
+
+  // 7. Map placeholders to real functions
+  const F_SIN  = x => Math.sin(toRad(x));
+  const F_COS  = x => Math.cos(toRad(x));
+  const F_TAN  = x => Math.tan(toRad(x));
+  const F_ASIN = x => fromRad(Math.asin(x));
+  const F_ACOS = x => fromRad(Math.acos(x));
+  const F_ATAN = x => fromRad(Math.atan(x));
+  const F_SINH = x => Math.sinh(x);
+  const F_COSH = x => Math.cosh(x);
+  const F_TANH = x => Math.tanh(x);
+  const F_SQRT = x => Math.sqrt(x);
+  const F_LOG  = x => Math.log10(x);
+  const F_LN   = x => Math.log(x);
+  const F_ABS  = x => Math.abs(x);
+
+  // eslint-disable-next-line no-new-func
+  const fn = new Function(
+    'F_SIN','F_COS','F_TAN','F_ASIN','F_ACOS','F_ATAN',
+    'F_SINH','F_COSH','F_TANH','F_SQRT','F_LOG','F_LN','F_ABS',
+    '"use strict"; return (' + e + ');'
+  );
+
+  return fn(
+    F_SIN, F_COS, F_TAN, F_ASIN, F_ACOS, F_ATAN,
+    F_SINH, F_COSH, F_TANH, F_SQRT, F_LOG, F_LN, F_ABS
+  );
+}
+
+// ── Calculate ──────────────────────────────────────────────
+function calculate() {
+  if (!expr) return;
+  const raw = expr;
+  try {
+    const result = safeEval(raw);
+    if (!isFinite(result) || isNaN(result)) throw new Error('Math Error');
+
+    let out;
+    if (Number.isInteger(result) && Math.abs(result) < 1e15) {
+      out = result.toString();
+    } else {
+      // Round to 10 significant figures, remove trailing zeros
+      out = parseFloat(result.toPrecision(10)).toString();
+      if (out.length > 16) out = result.toExponential(6);
+    }
+
+    addHistory(raw, out);
+    expressionEl.textContent = raw + ' =';
+    showDisplay(out, 'computed');
+    expr = out;
+    justCalc = true;
+
+  } catch(err) {
+    showDisplay('Math Error', 'error');
+    setTimeout(() => { showDisplay(expr || '0'); resultEl.className = 'result'; }, 1800);
+  }
+}
+
+// ── History ────────────────────────────────────────────────
+function addHistory(ex, res) {
+  history.unshift({ ex, res });
+  if (history.length > 30) history.pop();
+  renderHistory();
+}
+function renderHistory() {
+  const panel = document.getElementById('historyPanel');
+  const empty = document.getElementById('histEmpty');
+  if (!history.length) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  panel.innerHTML = '';
+  history.forEach(h => {
+    const d = document.createElement('div');
+    d.className = 'history-item';
+    d.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)">${h.ex}</span><span style="margin-left:10px;color:var(--text)">${h.res}</span>`;
+    d.onclick = () => { expr = h.res; justCalc = true; showDisplay(h.res, 'computed'); expressionEl.textContent = h.ex + ' ='; };
+    panel.appendChild(d);
+  });
+}
+function toggleHistory() { document.getElementById('historyPanel').classList.toggle('open'); }
+
+// ── Keyboard ───────────────────────────────────────────────
+document.addEventListener('keydown', ev => {
+  if (ev.key >= '0' && ev.key <= '9') insertNum(ev.key);
+  else if (ev.key === '.') insertDot();
+  else if (ev.key === '+') insertOp('+');
+  else if (ev.key === '-') insertOp('-');
+  else if (ev.key === '*') insertOp('*');
+  else if (ev.key === '/') { ev.preventDefault(); insertOp('/'); }
+  else if (ev.key === '^') insertFn('^');
+  else if (ev.key === '%') insertFn('%');
+  else if (ev.key === '(') { if (expr && /[\d\)]$/.test(expr)) expr += '*'; expr += '('; refresh(); }
+  else if (ev.key === ')') { expr += ')'; refresh(); }
+  else if (ev.key === 'Enter' || ev.key === '=') calculate();
+  else if (ev.key === 'Backspace') delChar();
+  else if (ev.key === 'Escape') clearAll();
+});
+</script>
+</body>
+</html>

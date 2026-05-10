@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: #0f3460;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .display {
+            background: #1a1a2e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .history {
+            color: #888;
+            font-size: 14px;
+            min-height: 20px;
+            margin-bottom: 5px;
+        }
+
+        .main-display {
+            color: #fff;
+            font-size: 36px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            overflow-x: auto;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 20px;
+            background: #1a1a2e;
+            color: #888;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .buttons {
+            display: grid;
+            gap: 10px;
+        }
+
+        .scientific-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .basic-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        button {
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .num {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .num:hover {
+            background: #252545;
+        }
+
+        .op {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .op:hover {
+            background: #ff6b6b;
+        }
+
+        .func {
+            background: #533483;
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .func:hover {
+            background: #6b4aa1;
+        }
+
+        .clear {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        .clear:hover {
+            background: #e74c3c;
+        }
+
+        .equals {
+            background: #27ae60;
+            color: #fff;
+            grid-column: span 2;
+        }
+
+        .equals:hover {
+            background: #2ecc71;
+        }
+
+        .zero {
+            grid-column: span 2;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                padding: 15px;
+            }
+            
+            button {
+                padding: 15px;
+                font-size: 16px;
+            }
+            
+            .main-display {
+                font-size: 28px;
+            }
+            
+            .scientific-row {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="history" id="history"></div>
+            <div class="main-display" id="display">0</div>
+        </div>
+        
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="setMode('scientific')">Scientific</button>
+            <button class="mode-btn" onclick="setMode('basic')">Basic</button>
+        </div>
+
+        <div class="buttons">
+            <!-- Scientific Functions -->
+            <div class="scientific-row" id="sciRow">
+                <button class="func" onclick="insertFunc('sin(')">sin</button>
+                <button class="func" onclick="insertFunc('cos(')">cos</button>
+                <button class="func" onclick="insertFunc('tan(')">tan</button>
+                <button class="func" onclick="insertFunc('log(')">log</button>
+                <button class="func" onclick="insertFunc('ln(')">ln</button>
+                
+                <button class="func" onclick="insertFunc('asin(')">sin⁻¹</button>
+                <button class="func" onclick="insertFunc('acos(')">cos⁻¹</button>
+                <button class="func" onclick="insertFunc('atan(')">tan⁻¹</button>
+                <button class="func" onclick="insertFunc('sqrt(')">√</button>
+                <button class="func" onclick="insertFunc('cbrt(')">∛</button>
+                
+                <button class="func" onclick="insertFunc('pow(')">xʸ</button>
+                <button class="func" onclick="insertFunc('10^')">10ˣ</button>
+                <button class="func" onclick="insertFunc('e^')">eˣ</button>
+                <button class="func" onclick="insertFunc('abs(')">|x|</button>
+                <button class="func" onclick="insertFunc('fact(')">n!</button>
+            </div>
+
+            <!-- Basic Keypad -->
+            <div class="basic-row">
+                <button class="clear" onclick="clearAll()">AC</button>
+                <button class="clear" onclick="deleteLast()">⌫</button>
+                <button class="func" onclick="insert('%')">%</button>
+                <button class="op" onclick="insert('/')">÷</button>
+            </div>
+
+            <div class="basic-row">
+                <button class="num" onclick="insert('7')">7</button>
+                <button class="num" onclick="insert('8')">8</button>
+                <button class="num" onclick="insert('9')">9</button>
+                <button class="op" onclick="insert('*')">×</button>
+            </div>
+
+            <div class="basic-row">
+                <button class="num" onclick="insert('4')">4</button>
+                <button class="num" onclick="insert('5')">5</button>
+                <button class="num" onclick="insert('6')">6</button>
+                <button class="op" onclick="insert('-')">−</button>
+            </div>
+
+            <div class="basic-row">
+                <button class="num" onclick="insert('1')">1</button>
+                <button class="num" onclick="insert('2')">2</button>
+                <button class="num" onclick="insert('3')">3</button>
+                <button class="op" onclick="insert('+')">+</button>
+            </div>
+
+            <div class="basic-row">
+                <button class="num zero" onclick="insert('0')">0</button>
+                <button class="num" onclick="insert('.')">.</button>
+                <button class="equals" onclick="calculate()">=</button>
+            </div>
+
+            <div class="basic-row" id="extraRow">
+                <button class="func" onclick="insert('(')">(</button>
+                <button class="func" onclick="insert(')')">)</button>
+                <button class="func" onclick="insert('pi')">π</button>
+                <button class="func" onclick="insert('e')">e</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let history = document.getElementById('history');
+        let currentInput = '0';
+        let isNewCalculation = false;
+
+        function updateDisplay() {
+            display.textContent = currentInput;
+        }
+
+        function insert(value) {
+            if (isNewCalculation) {
+                currentInput = '0';
+                isNewCalculation = false;
+            }
+            
+            if (currentInput === '0' && value !== '.') {
+                currentInput = value;
+            } else {
+                currentInput += value;
+            }
+            updateDisplay();
+        }
+
+        function insertFunc(func) {
+            if (isNewCalculation) {
+                currentInput = '0';
+                isNewCalculation = false;
+            }
+            
+            if (currentInput === '0') {
+                currentInput = func;
+            } else {
+                currentInput += func;
+            }
+            updateDisplay();
+        }
+
+        function clearAll() {
+            currentInput = '0';
+            history.textContent = '';
+            updateDisplay();
+        }
+
+        function deleteLast() {
+            if (currentInput.length > 1) {
+                currentInput = currentInput.slice(0, -1);
+            } else {
+                currentInput = '0';
+            }
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0) return NaN;
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) {
+                result *= i;
+            }
+            return result;
+        }
+
+        function calculate() {
+            try {
+                let expression = currentInput
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/asin/g, 'Math.asin')
+                    .replace(/acos/g, 'Math.acos')
+                    .replace(/atan/g, 'Math.atan')
+                    .replace(/log/g, 'Math.log10')
+                    .replace(/ln/g, 'Math.log')
+                    .replace(/sqrt/g, 'Math.sqrt')
+                    .replace(/cbrt/g, 'Math.cbrt')
+                    .replace(/pow/g, 'Math.pow')
+                    .replace(/abs/g, 'Math.abs')
+                    .replace(/pi/g, 'Math.PI')
+                    .replace(/e/g, 'Math.E')
+                    .replace(/fact/g, 'factorial')
+                    .replace(/10\^/g, '(10**')
+                    .replace(/e\^/g, '(Math.E**')
+                    .replace(/\^/g, '**');
+
+                // Fix parentheses for 10^ and e^
+                expression = expression.replace(/\(10\*\*/g, '(10**');
+                expression = expression.replace(/\(Math\.E\*\*/g, '(Math.E**');
+
+                // Handle percentage
+                expression = expression.replace(/(\d+)%/g, '($1/100)');
+
+                let result = eval(expression);
+                
+                if (!isFinite(result) || isNaN(result)) {
+                    throw new Error('Invalid');
+                }
+
+                history.textContent = currentInput + ' =';
+                currentInput = parseFloat(result.toFixed(10)).toString();
+                isNewCalculation = true;
+                updateDisplay();
+            } catch (error) {
+                currentInput = 'Error';
+                isNewCalculation = true;
+                updateDisplay();
+                setTimeout(() => {
+                    currentInput = '0';
+                    updateDisplay();
+                }, 1500);
+            }
+        }
+
+        function setMode(mode) {
+            const sciRow = document.getElementById('sciRow');
+            const extraRow = document.getElementById('extraRow');
+            const buttons = document.querySelectorAll('.mode-btn');
+            
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            if (mode === 'scientific') {
+                sciRow.classList.remove('hidden');
+                extraRow.classList.remove('hidden');
+                buttons[0].classList.add('active');
+            } else {
+                sciRow.classList.add('hidden');
+                extraRow.classList.add('hidden');
+                buttons[1].classList.add('active');
+            }
+        }
+
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') insert(e.key);
+            if (e.key === '.') insert('.');
+            if (e.key === '+') insert('+');
+            if (e.key === '-') insert('-');
+            if (e.key === '*') insert('*');
+            if (e.key === '/') insert('/');
+            if (e.key === '%') insert('%');
+            if (e.key === '(') insert('(');
+            if (e.key === ')') insert(')');
+            if (e.key === '^') insert('^');
+            if (e.key === 'Enter' || e.key === '=') calculate();
+            if (e.key === 'Backspace') deleteLast();
+            if (e.key === 'Escape') clearAll();
+        });
+    </script>
+</body>
+</html>
